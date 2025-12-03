@@ -155,7 +155,7 @@ def get_credentials(
                     f"See docs/setup.md for detailed instructions."
                 )
 
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_local_server(port=0)  # type: ignore[attr-defined]
 
         # Save the credentials for the next run
         token_path.parent.mkdir(parents=True, exist_ok=True)
@@ -195,7 +195,7 @@ def run_oauth_flow(token_file: str, credentials_file: str | None = None) -> bool
             flow = InstalledAppFlow.from_client_config(get_default_client_config(), SCOPES)
 
         # Run the OAuth flow - this opens a browser
-        creds = flow.run_local_server(port=0)
+        creds = flow.run_local_server(port=0)  # type: ignore[attr-defined]
 
         # Save the token
         token_path.parent.mkdir(parents=True, exist_ok=True)
