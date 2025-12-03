@@ -43,13 +43,13 @@ jobs:
             echo "Error: Version must be provided for workflow_dispatch"
             exit 1
           fi
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Releasing version: $VERSION"
 
       - name: Update version in pyproject.toml
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" pyproject.toml
           echo "Updated pyproject.toml to version $VERSION"
 
       - name: Inject OAuth credentials
@@ -72,7 +72,7 @@ jobs:
           ls -lh dist/
           echo "Build artifacts:"
           for file in dist/*; do
-            echo "  - $(basename $file) ($(du -h $file | cut -f1))"
+            echo "  - $(basename "$file") ($(du -h "$file" | cut -f1))"
           done
 
       - name: Publish to PyPI (Trusted Publishing)

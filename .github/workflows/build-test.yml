@@ -41,7 +41,7 @@ jobs:
           echo ""
           echo "Build artifacts:"
           for file in dist/*; do
-            echo "  - $(basename $file) ($(du -h $file | cut -f1))"
+            echo "  - $(basename "$file") ($(du -h "$file" | cut -f1))"
           done
 
       - name: Test install from wheel
