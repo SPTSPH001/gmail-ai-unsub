@@ -32,34 +32,31 @@ repos:
       # Run the formatter
       - id: ruff-format
 
-  # Type checking with mypy
-  # Note: mypy is slow and requires full project dependencies
-  # We run it in CI, but skip in pre-commit for speed
-  # Uncomment if you want to run it locally (requires: uv sync --all-extras)
-  # - repo: https://github.com/pre-commit/mirrors-mypy
-  #   rev: v1.11.2
-  #   hooks:
-  #     - id: mypy
-  #       additional_dependencies: [
-  #         types-requests,
-  #       ]
-  #       args: [--config-file=pyproject.toml]
-  #       files: ^src/
+  # Type checking with mypy (via local hook to use project environment)
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy type checker
+        entry: uv run mypy
+        language: system
+        types: [python]
+        files: ^src/
+        pass_filenames: false
+        always_run: true
+        args: [src/]
 
   # Type checking with ty (via local hook)
-  # Note: These are slower checks, run in CI but skip in pre-commit for speed
-  # Uncomment if you want to run them locally
-  # - repo: local
-  #   hooks:
-  #     - id: ty
-  #       name: ty type checker
-  #       entry: uvx ty check
-  #       language: system
-  #       types: [python]
-  #       files: ^src/
-  #       pass_filenames: false
-  #       always_run: true
-  #       args: [src/]
+  - repo: local
+    hooks:
+      - id: ty
+        name: ty type checker
+        entry: uvx ty check
+        language: system
+        types: [python]
+        files: ^src/
+        pass_filenames: false
+        always_run: true
+        args: [src/]
 
   # Type checking with pyrefly (via local hook)
   # - repo: local
