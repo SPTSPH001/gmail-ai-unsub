@@ -1025,5 +1025,281 @@ def cache_remove(email_id: str) -> None:
         console.print(f"[yellow]Email {email_id} was not in cache.[/yellow]")
 
 
+@main.group()
+def debug() -> None:
+    """Developer tools for debugging classification and prompts."""
+    pass
+
+
+@debug.command(name="classify")
+@click.argument("message_id")
+@click.option(
+    "--config",
+    type=click.Path(exists=True),
+    help="Path to config.toml (default: auto-detect)",
+)
+def debug_classify(message_id: str, config: str | None) -> None:
+    """Rerun classification on a specific message ID.
+
+    This is useful for debugging why an email was classified incorrectly.
+    Shows the full prompt, email content, and classification result.
+
+    Example:
+        gmail-unsub debug classify 19adade691d3f205
+    """
+    try:
+        cfg = Config(config) if config else Config()
+        client = GmailClient(cfg.gmail_credentials_file, cfg.gmail_token_file)
+
+        # Get message
+        console.print(f"[dim]Fetching message {message_id}...[/dim]")
+        message = client.get_message(message_id, format="full")
+
+        # Extract headers
+        headers = message.get("payload", {}).get("headers", [])
+        subject = ""
+        from_address = ""
+
+        for header in headers:
+            name = header.get("name", "").lower()
+            value = header.get("value", "")
+            if name == "subject":
+                subject = value
+            elif name == "from":
+                from_address = value
+
+        # Parse body
+        body, _ = parse_email_body(message)
+
+        # Create classifier
+        classifier = create_classifier(
+            provider=cast(Literal["google", "anthropic", "openai"], cfg.llm_provider),
+            model=cfg.llm_model,
+            api_key=cfg.llm_api_key or "",
+            system_prompt=cfg.prompt_system,
+            marketing_criteria=cfg.prompt_marketing_criteria,
+            exclusions=cfg.prompt_exclusions,
+            temperature=cfg.llm_temperature,
+            thinking_level=cfg.llm_thinking_level,
+            max_tokens=cfg.llm_max_tokens,
+            user_preferences=cfg.prompt_user_preferences,
+        )
+
+        # Show email details
+        console.print()
+        console.print(Panel(f"[bold]Message ID:[/bold] {message_id}", title="Email Details"))
+        console.print(f"[bold]Subject:[/bold] {subject}")
+        console.print(f"[bold]From:[/bold] {from_address}")
+        console.print(f"[bold]Body length:[/bold] {len(body)} chars")
+        console.print(f"[bold]Gmail URL:[/bold] {get_gmail_url(message_id)}")
+        console.print()
+
+        # Show user preferences
+        if cfg.prompt_user_preferences:
+            console.print(Panel(cfg.prompt_user_preferences, title="User Preferences"))
+            console.print()
+
+        # Show prompt preview
+        exclusions_text = cfg.prompt_exclusions
+        if cfg.prompt_user_preferences.strip():
+            exclusions_text += "\n\nUser Preferences:\n" + cfg.prompt_user_preferences
+
+        prompt_preview = f"""Marketing Criteria:
+{cfg.prompt_marketing_criteria}
+
+Exclusions:
+{exclusions_text}
+
+Email Subject: {subject}
+Email From: {from_address}
+Email Body (first 2000 chars): {body[:2000]}"""
+        console.print(Panel(prompt_preview, title="Prompt Preview", border_style="blue"))
+        console.print()
+
+        # Classify
+        console.print("[dim]Running classification...[/dim]")
+        with Progress(
+            SpinnerColumn("dots"),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+            transient=True,
+        ) as progress:
+            progress.add_task("Classifying...", total=None)
+            result = classifier.classify_sync(subject, from_address, body)
+
+        # Show result
+        console.print()
+        status = "[red]MARKETING[/red]" if result.is_marketing else "[green]NOT MARKETING[/green]"
+        console.print(
+            Panel(
+                f"[bold]Result:[/bold] {status}\n[bold]Confidence:[/bold] {result.confidence:.0%}\n[bold]Reason:[/bold] {result.reason}",
+                title="Classification Result",
+                border_style="green" if not result.is_marketing else "red",
+            )
+        )
+        console.print()
+
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise click.Abort() from e
+
+
+@debug.command(name="show")
+@click.argument("message_id")
+@click.option(
+    "--config",
+    type=click.Path(exists=True),
+    help="Path to config.toml (default: auto-detect)",
+)
+@click.option("--show-body", is_flag=True, help="Show full email body")
+def debug_show(message_id: str, config: str | None, show_body: bool) -> None:
+    """Show full details of a message including ID, headers, and body.
+
+    Useful for debugging and understanding what the classifier sees.
+
+    Example:
+        gmail-unsub debug show 19adade691d3f205 --show-body
+    """
+    try:
+        cfg = Config(config) if config else Config()
+        client = GmailClient(cfg.gmail_credentials_file, cfg.gmail_token_file)
+
+        console.print(f"[dim]Fetching message {message_id}...[/dim]")
+        message = client.get_message(message_id, format="full")
+
+        # Extract headers
+        headers = message.get("payload", {}).get("headers", [])
+        subject = ""
+        from_address = ""
+        date = ""
+
+        header_table = Table(title="Email Headers")
+        header_table.add_column("Header", style="cyan")
+        header_table.add_column("Value", style="white")
+
+        for header in headers:
+            name = header.get("name", "")
+            value = header.get("value", "")
+            header_table.add_row(name, value)
+
+            name_lower = name.lower()
+            if name_lower == "subject":
+                subject = value
+            elif name_lower == "from":
+                from_address = value
+            elif name_lower == "date":
+                date = value
+
+        # Display key info
+        info_text = f"[bold]Message ID:[/bold] {message_id}\n[bold]Gmail URL:[/bold] {get_gmail_url(message_id)}"
+        if subject:
+            info_text += f"\n[bold]Subject:[/bold] {subject}"
+        if from_address:
+            info_text += f"\n[bold]From:[/bold] {from_address}"
+        if date:
+            info_text += f"\n[bold]Date:[/bold] {date}"
+
+        # Parse body
+        body, html_body = parse_email_body(message)
+
+        # Display
+        console.print()
+        console.print(Panel(info_text, title="Message Info"))
+        console.print()
+        console.print(header_table)
+        console.print()
+
+        if show_body:
+            console.print(
+                Panel(
+                    body[:5000] + ("..." if len(body) > 5000 else ""),
+                    title="Email Body (Plain Text)",
+                    border_style="blue",
+                )
+            )
+            if html_body and html_body != body:
+                console.print()
+                console.print(
+                    Panel(
+                        html_body[:2000] + ("..." if len(html_body) > 2000 else ""),
+                        title="Email Body (HTML)",
+                        border_style="yellow",
+                    )
+                )
+        else:
+            console.print(f"[dim]Body length: {len(body)} chars (use --show-body to view)[/dim]")
+            if html_body and html_body != body:
+                console.print(f"[dim]HTML body length: {len(html_body)} chars[/dim]")
+        console.print()
+
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise click.Abort() from e
+
+
+@debug.command(name="prompt")
+@click.option(
+    "--config",
+    type=click.Path(exists=True),
+    help="Path to config.toml (default: auto-detect)",
+)
+def debug_prompt(config: str | None) -> None:
+    """Show the full prompt template being used for classification.
+
+    Useful for debugging prompt issues and understanding what the model sees.
+    """
+    try:
+        cfg = Config(config) if config else Config()
+
+        # Build exclusions text
+        exclusions_text = cfg.prompt_exclusions
+        if cfg.prompt_user_preferences.strip():
+            exclusions_text += "\n\nUser Preferences:\n" + cfg.prompt_user_preferences
+
+        prompt_template = f"""System Prompt:
+{cfg.prompt_system}
+
+---
+
+Human Prompt Template:
+Analyze the following email and determine if it is a marketing or promotional email.
+
+Marketing Criteria:
+{{marketing_criteria}}
+
+Exclusions:
+{{exclusions}}
+
+Email Subject: {{subject}}
+Email From: {{from_address}}
+Email Body (first 2000 chars): {{body}}
+
+Respond with:
+- is_marketing: true or false
+- confidence: a number between 0.0 and 1.0
+- reason: a brief explanation (1-2 sentences)
+
+Email to classify:
+"""
+
+        console.print()
+        console.print(Panel(cfg.prompt_system, title="System Prompt", border_style="blue"))
+        console.print()
+        console.print(Panel(prompt_template, title="Human Prompt Template", border_style="green"))
+        console.print()
+        console.print(
+            Panel(cfg.prompt_marketing_criteria, title="Marketing Criteria", border_style="yellow")
+        )
+        console.print()
+        console.print(
+            Panel(exclusions_text, title="Exclusions (with User Preferences)", border_style="cyan")
+        )
+        console.print()
+
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {e}")
+        raise click.Abort() from e
+
+
 if __name__ == "__main__":
     main()
