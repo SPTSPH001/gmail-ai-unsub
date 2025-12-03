@@ -143,10 +143,10 @@ def get_credentials(
 
             if creds_path and creds_path.exists():
                 # Use user-provided credentials file
-                flow = InstalledAppFlow.from_client_secrets_file(str(creds_path), SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(str(creds_path), SCOPES)  # type: ignore[assignment]
             elif use_default_credentials:
                 # Use embedded default credentials
-                flow = InstalledAppFlow.from_client_config(get_default_client_config(), SCOPES)
+                flow = InstalledAppFlow.from_client_config(get_default_client_config(), SCOPES)  # type: ignore[assignment]
             else:
                 raise FileNotFoundError(
                     f"Credentials file not found: {credentials_file}\n"
@@ -155,7 +155,7 @@ def get_credentials(
                     f"See docs/setup.md for detailed instructions."
                 )
 
-            creds = flow.run_local_server(port=0)
+            creds = flow.run_local_server(port=0)  # type: ignore[attr-defined]
 
         # Save the credentials for the next run
         token_path.parent.mkdir(parents=True, exist_ok=True)
@@ -164,7 +164,7 @@ def get_credentials(
 
     if creds is None:
         raise ValueError("Failed to obtain credentials")
-    return creds
+    return creds  # type: ignore[return-value]
 
 
 def run_oauth_flow(token_file: str, credentials_file: str | None = None) -> bool:
@@ -187,15 +187,15 @@ def run_oauth_flow(token_file: str, credentials_file: str | None = None) -> bool
         if credentials_file:
             creds_path = Path(expand_path(credentials_file))
             if creds_path.exists():
-                flow = InstalledAppFlow.from_client_secrets_file(str(creds_path), SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file(str(creds_path), SCOPES)  # type: ignore[assignment]
             else:
                 # Fall back to default credentials
-                flow = InstalledAppFlow.from_client_config(get_default_client_config(), SCOPES)
+                flow = InstalledAppFlow.from_client_config(get_default_client_config(), SCOPES)  # type: ignore[assignment]
         else:
-            flow = InstalledAppFlow.from_client_config(get_default_client_config(), SCOPES)
+            flow = InstalledAppFlow.from_client_config(get_default_client_config(), SCOPES)  # type: ignore[assignment]
 
         # Run the OAuth flow - this opens a browser
-        creds = flow.run_local_server(port=0)
+        creds = flow.run_local_server(port=0)  # type: ignore[attr-defined]
 
         # Save the token
         token_path.parent.mkdir(parents=True, exist_ok=True)

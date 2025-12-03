@@ -85,15 +85,28 @@ def main() -> None:
     is_flag=True,
     help="Ignore cache and re-analyze all emails",
 )
+@click.option(
+    "--debug",
+    is_flag=True,
+    help="Enable debug mode with performance timing information",
+)
 def scan(
     days: int,
     label: str | None,
     scan_label: str | None,
     config: str | None,
     no_cache: bool,
+    debug: bool,
 ) -> None:
     """Scan emails and label marketing emails."""
+    from gmail_ai_unsub.timing import enable_timing, get_timer, reset_timing
+
     try:
+        # Enable timing if debug mode
+        if debug:
+            enable_timing()
+            reset_timing()
+
         cfg = Config(config) if config else Config()
         storage = StateStorage(cfg.storage_state_file)
         cache = EmailCache()
@@ -192,8 +205,11 @@ def scan(
         # Get terminal width for formatting
         term_width = console.width or 80
 
+        timer = get_timer()
+
         while True:
-            result = client.list_messages(query=query, max_results=50, page_token=page_token)
+            with timer.time("gmail.list_messages"):
+                result = client.list_messages(query=query, max_results=50, page_token=page_token)
             messages = result.get("messages", [])
 
             if not messages:
@@ -204,7 +220,8 @@ def scan(
             # Filter out already-cached emails (batch lookup for efficiency)
             if not no_cache:
                 all_ids = [msg["id"] for msg in messages]
-                cached_ids = cache.get_analyzed_ids(all_ids)
+                with timer.time("cache.get_analyzed_ids"):
+                    cached_ids = cache.get_analyzed_ids(all_ids)
                 messages = [msg for msg in messages if msg["id"] not in cached_ids]
                 total_skipped += len(cached_ids)
 
@@ -214,7 +231,8 @@ def scan(
 
                 try:
                     # Get message metadata first (quota-efficient)
-                    message_meta = client.get_message_metadata(message_id)
+                    with timer.time("gmail.get_message_metadata"):
+                        message_meta = client.get_message_metadata(message_id)
 
                     # Extract headers
                     headers = message_meta.get("payload", {}).get("headers", [])
@@ -250,16 +268,21 @@ def scan(
                         progress.add_task(task_desc, total=None)
 
                         # Get full message for body
-                        message_full = client.get_message(message_id, format="full")
-                        body, _ = parse_email_body(message_full)
+                        with timer.time("gmail.get_message"):
+                            message_full = client.get_message(message_id, format="full")
+
+                        with timer.time("email.parse_body"):
+                            body, _ = parse_email_body(message_full)
 
                         # Classify email
-                        result_class = classifier.classify_sync(subject, from_address, body)
+                        with timer.time("llm.classify"):
+                            result_class = classifier.classify_sync(subject, from_address, body)
 
                     # Display result
                     if result_class.is_marketing:
                         # Apply marketing label
-                        client.labels.apply_label(message_id, marketing_label_id)
+                        with timer.time("gmail.apply_label"):
+                            client.labels.apply_label(message_id, marketing_label_id)
                         total_marketing += 1
 
                         # Build result display
@@ -282,9 +305,11 @@ def scan(
                         console.print(detail_text)
 
                         # Extract unsubscribe link if available
-                        unsubscribe_link = extract_list_unsubscribe_header(message_meta)
+                        with timer.time("extract.unsubscribe_header"):
+                            unsubscribe_link = extract_list_unsubscribe_header(message_meta)
                         if not unsubscribe_link:
-                            unsubscribe_link = extract_unsubscribe_from_body(body, message_id)
+                            with timer.time("extract.unsubscribe_body"):
+                                unsubscribe_link = extract_unsubscribe_from_body(body, message_id)
 
                         if unsubscribe_link:
                             storage.add_unsubscribe_link(unsubscribe_link)
@@ -306,13 +331,14 @@ def scan(
                         console.print(detail_text)
 
                     # Cache the result (commits immediately to survive Ctrl+C)
-                    cache.mark_analyzed(
-                        email_id=message_id,
-                        is_marketing=result_class.is_marketing,
-                        confidence=result_class.confidence,
-                        subject=subject[:200] if subject else None,
-                        from_address=from_address[:200] if from_address else None,
-                    )
+                    with timer.time("cache.mark_analyzed"):
+                        cache.mark_analyzed(
+                            email_id=message_id,
+                            is_marketing=result_class.is_marketing,
+                            confidence=result_class.confidence,
+                            subject=subject[:200] if subject else None,
+                            from_address=from_address[:200] if from_address else None,
+                        )
 
                     console.print()  # Blank line between emails
 
@@ -345,6 +371,55 @@ def scan(
         console.print(
             Panel(summary_table, title="[bold]Scan Complete[/bold]", border_style="green")
         )
+
+        # Display timing summary if debug mode
+        if debug:
+            from rich.table import Table as RichTable
+
+            timing_summary = timer.format_summary()
+            if timing_summary:
+                # Format as a Rich table
+                timing_table = RichTable(show_header=True, box=None, padding=(0, 1))
+                timing_table.add_column("Category", style="cyan", width=25)
+                timing_table.add_column("Count", justify="right", width=8)
+                timing_table.add_column("Total (s)", justify="right", width=10)
+                timing_table.add_column("Avg (s)", justify="right", width=10)
+                timing_table.add_column("Min (s)", justify="right", width=10)
+                timing_table.add_column("Max (s)", justify="right", width=10)
+                timing_table.add_column("P50 (s)", justify="right", width=10)
+                timing_table.add_column("P95 (s)", justify="right", width=10)
+
+                stats = timer.get_stats()
+                sorted_stats = sorted(stats.items(), key=lambda x: x[1].total_time, reverse=True)
+
+                for category, stat in sorted_stats:
+                    timing_table.add_row(
+                        category,
+                        str(stat.count),
+                        f"{stat.total_time:.3f}",
+                        f"{stat.avg_time:.3f}",
+                        f"{stat.min_time:.3f}",
+                        f"{stat.max_time:.3f}",
+                        f"{stat.p50:.3f}",
+                        f"{stat.p95:.3f}",
+                    )
+
+                total_time = sum(s.total_time for s in stats.values())
+                timing_table.add_row(
+                    "[bold]TOTAL[/bold]",
+                    "",
+                    f"[bold]{total_time:.3f}[/bold]",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                )
+
+                console.print()
+                console.print(
+                    Panel(timing_table, title="[bold]Performance Timing[/bold]", border_style="yellow")
+                )
 
         if total_marketing > 0:
             console.print()

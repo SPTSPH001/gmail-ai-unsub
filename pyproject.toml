@@ -140,6 +140,16 @@ module = [
 ]
 ignore_missing_imports = true
 
+[tool.pyrefly]
+python-version = "3.13.0"
+ignore-missing-imports = [
+    "browser_use.*",
+    "playwright.*",
+    "googleapiclient.*",
+    "google_auth_oauthlib.*",
+    "requests.*",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]

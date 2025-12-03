@@ -41,6 +41,9 @@ jobs:
       - name: Type check with ty
         run: uvx ty check src/
 
+      - name: Type check with pyrefly
+        run: uvx pyrefly check --summarize-errors
+
       - name: Run tests
         run: uv run pytest tests/ -v
 
