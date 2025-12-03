@@ -146,10 +146,6 @@ module = "gmail_ai_unsub.gmail.auth"
 warn_unused_ignores = false
 
 [tool.pyrefly]
-ignore = [
-    "src/gmail_ai_unsub/gmail/auth.py::158",  # run_local_server is dynamically added
-    "src/gmail_ai_unsub/gmail/auth.py::198",  # run_local_server is dynamically added
-]
 python-version = "3.13.0"
 ignore-missing-imports = [
     "browser_use.*",
